@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="sr-Latn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skela — raspored i troškovi</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0a0a0a}
+.sk{position:relative;container-type:inline-size;background:#0a0a0a;color:#f5efe6;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding:14px;min-height:100vh}
+.sk [hidden]{display:none !important}
+.sk-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.sk-p{background:#161616;border:1px solid #2b2b2b;border-top:2px solid #d4af37;padding:14px}
+.sk-title{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,#2a2210 0%,#0a0a0a 72%);border:1px solid #d4af37;border-top:2px solid #f0d77a;box-shadow:inset 0 1px 0 rgba(255,236,170,.55),inset 0 -14px 26px rgba(0,0,0,.6),0 6px 18px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:10px}
+.sk-title::before{content:'';position:absolute;left:0;right:0;top:0;height:46%;background:linear-gradient(to bottom,rgba(255,255,255,.2),rgba(255,255,255,.03));pointer-events:none;z-index:2}
+.sk-title::after{content:'';position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(105deg,transparent,rgba(255,244,200,.3),transparent);transform:skewX(-20deg);pointer-events:none;z-index:2}
+@media (prefers-reduced-motion:no-preference){.sk-title::after{animation:sk-shine 6s ease-in-out infinite}}
+@keyframes sk-shine{0%,60%{left:-60%}100%{left:130%}}
+.sk-logo{display:block;width:100%;max-width:260px;height:auto;mix-blend-mode:lighten;position:relative;z-index:1}
+.sk-vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.sk-h{margin:0;font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:26px;letter-spacing:.04em;color:#0a0a0a}
+.sk-hd{margin:0 0 10px;text-align:center;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#d4af37}
+.sk-lab{text-align:center;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#d4af37}
+.sk-line{height:2px;background:#d4af37;opacity:.55;margin:7px 0 10px}
+.sk-big{text-align:center;font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;color:#fff}
+.sk-blk{margin-bottom:16px}
+.sk-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));padding:0}
+.sk-kc{padding:12px 8px;border-left:1px solid #3a3a3a;display:flex;flex-direction:column;gap:8px}
+.sk-kc:first-child{border-left:0}
+.sk-kc .sk-big{font-size:30px;color:#ff7a1a}
+.sk-lead{margin:0;font-size:15px;color:#d4af37;padding:4px 2px}
+.sk-lead b{color:#fff;font-weight:700;font-variant-numeric:tabular-nums}
+.sk-date{display:flex;flex-direction:column;justify-content:center;gap:8px}
+.sk-mid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.sk-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.sk-rows{display:flex;flex-direction:column;gap:14px}
+.sk-chart{position:relative;min-height:120px}
+.sk-legend{display:flex;gap:14px;justify-content:center;font-size:11px;letter-spacing:.08em;color:#d4af37;margin-bottom:6px}
+.sk-sw{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}
+.sk-note{margin:0;color:#bfae92;font-size:13px}
+.sk-rl{fill:#f5efe6;font-size:11px}
+.sk-bl{fill:#bfae92;font-size:11px}
+.sk-vl{fill:#fff;font-size:11px;font-weight:700}
+.sk-cl{fill:#d4af37;font-size:10px;letter-spacing:.06em;font-weight:700}
+.sk-in-bar{paint-order:stroke;stroke:#0a0a0a;stroke-width:3px}
+.sk-axis text{fill:#bfae92;font-size:11px}
+.sk-axis path,.sk-axis line{stroke:#d4af37}
+.sk-tip{position:absolute;pointer-events:none;background:#0a0a0a;border:1px solid #d4af37;color:#f5efe6;padding:6px 8px;font-size:12px;max-width:240px;z-index:2}
+.sk-hr{display:flex;flex-direction:column;gap:3px}
+.sk-hl-l{text-align:center;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#d4af37}
+.sk-hl-r{display:flex;align-items:center;gap:8px}
+.sk-hl-v{width:48px;text-align:right;font-size:11px;font-variant-numeric:tabular-nums;color:#f5efe6}
+.sk-hl-t{flex:1;height:16px;background:#2a2a2a}
+.sk-hl-b{height:100%;background:#ff7a1a}
+.sk-ul{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12px;color:#d4af37}
+.sk-wrap{overflow-x:auto}
+.sk-tab{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums;text-align:center}
+.sk-tab th{background:#d4af37;color:#0a0a0a;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:8px 10px;white-space:nowrap;border:1px solid #0a0a0a}
+.sk-tab td{padding:8px 10px;border:1px solid #3a3a3a;white-space:nowrap;color:#fff}
+.st-akt{color:#ff7a1a !important;font-weight:700}
+.st-zav{color:#bfae92 !important}
+.sk-del{font:inherit;font-size:11px;background:none;border:1px solid #d4af37;color:#d4af37;padding:2px 8px;cursor:pointer}
+.sk-del.armed{color:#ff7a1a;border-color:#ff7a1a}
+.sk-add summary{cursor:pointer;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.sk-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:12px}
+.sk-fl{display:flex;flex-direction:column;gap:4px;font-size:11px;letter-spacing:.04em;color:#bfae92}
+.sk-in{font:inherit;font-size:13px;color:#fff;background:#1c1c1c;border:1px solid #3a3a3a;padding:7px 8px;min-width:0;color-scheme:dark}
+.sk-btn{font:inherit;font-size:13px;font-weight:700;background:#ff7a1a;color:#0a0a0a;border:0;padding:9px 16px;cursor:pointer;align-self:end}
+.sk-err{margin:8px 0 0;color:#ff7a1a;font-size:13px}
+.sk-how{color:#bfae92;font-size:12px}
+.sk-how summary{cursor:pointer}
+.sk-bk{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.sk-pick{display:flex;gap:8px;margin-bottom:14px}
+.sk-sel{flex:1;min-width:0}
+.sk-nav{font:inherit;font-size:16px;background:#1c1c1c;color:#d4af37;border:1px solid #3a3a3a;padding:4px 14px;cursor:pointer}
+.sk-dh{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:6px}
+.sk-dt{font-size:20px;font-weight:700;color:#fff}
+.sk-ds{font-size:13px;color:#bfae92}
+.sk-st{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border:1px solid #d4af37;color:#d4af37}
+.sk-st.akt{background:#ff7a1a;border-color:#ff7a1a;color:#0a0a0a}
+.sk-dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:#3a3a3a;border:1px solid #3a3a3a;margin-top:12px}
+.sk-dc{background:#161616;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:#bfae92}
+.sk-dc .sk-lab{text-align:left}
+.sk-dv{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:#fff}
+.sk-dv.hot{color:#ff7a1a}
+.sk-dv.sm{font-size:15px}
+.sk-pg{height:10px;background:#2a2a2a;margin-top:12px}
+.sk-pb{height:100%;background:#ff7a1a}
+.sk-pl{font-size:13px;color:#f5efe6;margin:8px 0 0}
+.sk-pl b{color:#fff}
+.sk-nt{margin:10px 0 0;font-size:13px;color:#bfae92}
+.sk-open{font:inherit;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:#ff7a1a;color:#0a0a0a;border:0;padding:9px 12px;cursor:pointer;margin-top:4px}
+.sk-modal{position:absolute;inset:0;background:rgba(0,0,0,.85);z-index:10;display:flex;justify-content:center;align-items:flex-start;padding:24px 12px}
+.sk-mp{background:#161616;border:1px solid #3a3a3a;border-top:3px solid #d4af37;max-width:780px;width:100%;padding:16px;display:flex;flex-direction:column;gap:14px}
+.sk-mh{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.sk-mt{margin:0;font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:22px;color:#fff;flex:1}
+.sk-badge{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border:1px solid #ff7a1a;color:#ff7a1a}
+.sk-x{font:inherit;font-size:16px;background:none;border:1px solid #3a3a3a;color:#d4af37;padding:2px 10px;cursor:pointer}
+.sk-sbar{display:flex;flex-direction:column;gap:12px}
+.sk-sr{display:flex;flex-direction:column;gap:4px}
+.sk-sl{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#f5efe6}
+.sk-sl span:first-child{font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#d4af37}
+.sk-trk{display:flex;height:16px;background:#2a2a2a}
+.sk-sa{background:#ff7a1a}
+.sk-sb{background:#d4af37}
+.sk-tab tbody tr{cursor:pointer}
+.sk-tab tr.sk-sel-row td{background:#222}
+.sk-tab tr.sk-sel-row td:first-child{box-shadow:inset 3px 0 0 #ff7a1a}
+@container (min-width:900px){
+.sk-grid{grid-template-columns:210px minmax(0,1fr) 210px;grid-template-areas:"title kpis date" "lead lead lead" "form form form" "left mid right" "left bars right" "gantt gantt gantt" "detalj detalj detalj" "tab tab tab" "how how how"}
+.sk-title{grid-area:title}.sk-kpis{grid-area:kpis}.sk-date{grid-area:date}.sk-lead{grid-area:lead}.sk-add{grid-area:form}.sk-left{grid-area:left}.sk-mid{grid-area:mid}.sk-bars{grid-area:bars}.sk-right{grid-area:right}.sk-gantt{grid-area:gantt}.sk-detalj{grid-area:detalj}.sk-tabp{grid-area:tab}.sk-how{grid-area:how}
+}
+</style>
+</head>
+<body>
+<div class="sk">
+<div class="sk-grid">
+<div class="sk-title"><img class="sk-logo" src="logo.jpg" alt="Kolic Company logo"><h1 class="sk-vh">Kolic Company — skela</h1></div>
+<div class="sk-p sk-kpis sk-when-full">
+<div class="sk-kc"><span class="sk-lab">Najmovi</span><b class="sk-big" data-draw="k_stavki">—</b></div>
+<div class="sk-kc"><span class="sk-lab">Aktivno</span><b class="sk-big" data-draw="k_aktivno">—</b></div>
+<div class="sk-kc"><span class="sk-lab">Ukupno m²</span><b class="sk-big" data-draw="k_m2_ukupno">—</b></div>
+<div class="sk-kc"><span class="sk-lab">€ dnevno (aktivni)</span><b class="sk-big" data-draw="k_dnevno_aktivno">—</b></div>
+<div class="sk-kc"><span class="sk-lab">Dana do isteka</span><b class="sk-big" data-draw="k_istek_dana">—</b></div>
+</div>
+<div class="sk-p sk-date"><span class="sk-lab">Danas</span><div class="sk-line"></div><b class="sk-big" data-draw="danas">—</b><button type="button" class="sk-open" id="sk-open">Stanje skele</button></div>
+<p class="sk-lead sk-when-full">U evidenciji je <b data-draw="k_stavki">—</b> najmova, od toga <b data-draw="k_aktivno">—</b> trenutno aktivnih, a ukupan trošak svih je <b data-draw="k_trosak_ukupno">—</b> €.</p>
+<p class="sk-lead sk-when-empty" hidden>Još nema unetih najmova skele. Dodaj prvi ispod i ovde će se pojaviti raspored i troškovi.</p>
+<details class="sk-p sk-add" id="dodaj">
+<summary>+ Dodaj novi najam</summary>
+<form id="sk-form" class="sk-form">
+<label class="sk-fl">Gradilište / lokacija<input class="sk-in" name="lokacija" type="text" required placeholder="npr. Zgrada u Budvi"></label>
+<label class="sk-fl">Vrsta skele<select class="sk-in" name="vrsta"><option>Fasadna</option><option>Ramovska</option><option>Pokretna kula</option><option>Ostalo</option></select></label>
+<label class="sk-fl">Površina (m²)<input class="sk-in" name="m2" type="number" min="1" step="any" required></label>
+<label class="sk-fl">Cena (€ po m²)<input class="sk-in" name="cena" type="number" min="0" step="any" required></label>
+<label class="sk-fl">Cena važi po<select class="sk-in" name="jedinica"><option value="dan">danu</option><option value="nedelja">nedelji</option><option value="mesec">mesecu (30 dana)</option></select></label>
+<label class="sk-fl">Prevoz / montaža (€, jednokratno)<input class="sk-in" name="prevoz" type="number" min="0" step="any"></label>
+<label class="sk-fl">Početak najma<input class="sk-in" name="pocetak" type="date" required></label>
+<label class="sk-fl">Kraj najma<input class="sk-in" name="kraj" type="date" required></label>
+<label class="sk-fl">Napomena<input class="sk-in" name="napomena" type="text"></label>
+<button class="sk-btn" type="submit">Dodaj</button>
+</form>
+<p class="sk-err sk-e-req" hidden>Upiši lokaciju, površinu veću od 0 i cenu.</p>
+<p class="sk-err sk-e-dat" hidden>Datum kraja mora biti isti kao početak ili kasniji.</p>
+<p class="sk-err sk-e-save" hidden>Nije sačuvano. Pokušaj ponovo.</p>
+</details>
+<aside class="sk-p sk-left sk-when-full">
+<div class="sk-blk"><div class="sk-lab">Ukupan trošak</div><div class="sk-line"></div><div class="sk-big"><span data-draw="k_trosak_ukupno">—</span> €</div></div>
+<div class="sk-blk"><div class="sk-lab">Najam (bez prevoza)</div><div class="sk-line"></div><div class="sk-big"><span data-draw="k_najam_ukupno">—</span> €</div></div>
+<div class="sk-blk"><div class="sk-lab">Prevoz i montaža</div><div class="sk-line"></div><div class="sk-big"><span data-draw="k_prevoz_ukupno">—</span> €</div></div>
+<div class="sk-chart" data-draw="vbar">—</div>
+</aside>
+<div class="sk-mid sk-when-full">
+<section class="sk-p"><h2 class="sk-hd">Trošak po gradilištu (€)</h2><div class="sk-legend"><span><i class="sk-sw" style="background:#ff7a1a"></i>NAJAM</span><span><i class="sk-sw" style="background:#d4af37"></i>PREVOZ</span></div><div class="sk-chart" data-draw="gbar">—</div></section>
+<section class="sk-p"><h2 class="sk-hd">Trošak po vrsti skele</h2><div class="sk-chart" data-draw="donut">—</div></section>
+</div>
+<div class="sk-bars sk-when-full">
+<section class="sk-p"><h2 class="sk-hd">m² po gradilištu</h2><div class="sk-rows" data-draw="hl_m2">—</div></section>
+<section class="sk-p"><h2 class="sk-hd">Trošak po m² (€)</h2><div class="sk-rows" data-draw="hl_po_m2">—</div></section>
+<section class="sk-p"><h2 class="sk-hd">Ukupno dana najma</h2><div class="sk-rows" data-draw="hl_dana">—</div></section>
+</div>
+<aside class="sk-p sk-right sk-when-full">
+<div class="sk-blk"><div class="sk-lab">Aktivna skela danas</div><div class="sk-line"></div><div class="sk-big"><span data-draw="k_m2_aktivno">—</span> m²</div></div>
+<div class="sk-blk"><div class="sk-lab">Planirani najmovi</div><div class="sk-line"></div><div class="sk-big" data-draw="k_planirano">—</div></div>
+<div class="sk-blk"><div class="sk-lab">Završeni najmovi</div><div class="sk-line"></div><div class="sk-big" data-draw="k_zavrseno">—</div></div>
+</aside>
+<section class="sk-p sk-gantt sk-when-full"><h2 class="sk-hd">Raspored najma</h2><div class="sk-chart" data-draw="raspored">—</div></section>
+<section class="sk-p sk-detalj sk-when-full" id="detalj-sek">
+<h2 class="sk-hd">Pojedinačni najam</h2>
+<div class="sk-pick"><button type="button" class="sk-nav" id="sk-prev" aria-label="Prethodni najam">‹</button><select class="sk-in sk-sel" data-draw="izbor" aria-label="Izaberi najam"></select><button type="button" class="sk-nav" id="sk-next" aria-label="Sledeći najam">›</button></div>
+<div data-draw="detalj">—</div>
+</section>
+<section class="sk-p sk-tabp sk-when-full"><h2 class="sk-hd">Svi najmovi</h2>
+<div class="sk-wrap">
+<table class="sk-tab">
+<thead><tr><th>Lokacija</th><th>Vrsta</th><th>m²</th><th>Cena (€/m²)</th><th>Po</th><th>Početak</th><th>Kraj</th><th>Dana</th><th>Status</th><th>Trošak (€)</th><th></th></tr></thead>
+<tbody data-draw="tabela"></tbody>
+</table>
+</div>
+</section>
+<details class="sk-how"><summary>Kako se računa trošak i gde su podaci</summary><p>Trošak = površina × cena × trajanje, uz prevoz/montažu jednom. Trajanje se računa u danima, uključujući prvi i poslednji dan; nedelja je 7 dana, a mesec 30 dana. Status se određuje prema današnjem datumu. Podaci se čuvaju u ovom pretraživaču (na ovom uređaju); za rezervnu kopiju ili prenos na drugi uređaj koristi dugmad ispod.</p>
+<div class="sk-bk"><button type="button" class="sk-del" id="sk-exp">Preuzmi podatke (JSON)</button><label class="sk-del">Učitaj podatke<input type="file" id="sk-imp" accept="application/json" hidden></label></div></details>
+</div>
+<div class="sk-modal" id="sk-modal" hidden>
+<div class="sk-mp" role="dialog" aria-labelledby="stanje-h">
+<div class="sk-mh"><h2 class="sk-mt" id="stanje-h">Stanje skele</h2><span class="sk-badge">Izmenjivo</span><button type="button" class="sk-x" id="sk-close" aria-label="Zatvori">✕</button></div>
+<div class="sk-p sk-kpis">
+<div class="sk-kc"><span class="sk-lab">Ukupno m²</span><b class="sk-big" data-draw="z_ukupno">—</b></div>
+<div class="sk-kc"><span class="sk-lab">Na gradilištima</span><b class="sk-big" data-draw="z_na_gradilistu">—</b></div>
+<div class="sk-kc"><span class="sk-lab">Slobodno</span><b class="sk-big" data-draw="z_slobodno">—</b></div>
+<div class="sk-kc"><span class="sk-lab">Oštećeno</span><b class="sk-big" data-draw="z_ostecenih">—</b></div>
+<div class="sk-kc"><span class="sk-lab">Zauzetost %</span><b class="sk-big" data-draw="z_zauzetost">—</b></div>
+</div>
+<div class="sk-p">
+<h2 class="sk-hd">Zauzetost po vrsti skele (m²)</h2>
+<div class="sk-legend"><span><i class="sk-sw" style="background:#ff7a1a"></i>NA GRADILIŠTU</span><span><i class="sk-sw" style="background:#d4af37"></i>SLOBODNO</span></div>
+<div class="sk-sbar" data-draw="stanje_bar">—</div>
+</div>
+<div class="sk-p">
+<h2 class="sk-hd">Izmeni ili dodaj vrstu skele</h2>
+<form id="sk-sform" class="sk-form">
+<label class="sk-fl">Vrsta skele<input class="sk-in" name="vrsta" type="text" list="sk-vrste" required placeholder="npr. Fasadna"></label>
+<datalist id="sk-vrste"><option value="Fasadna"></option><option value="Ramovska"></option><option value="Pokretna kula"></option><option value="Ostalo (podupirači)"></option></datalist>
+<label class="sk-fl">Ukupno (m²)<input class="sk-in" name="ukupno" type="number" min="0" step="any" required></label>
+<label class="sk-fl">Na gradilištu (m²)<input class="sk-in" name="na" type="number" min="0" step="any" required></label>
+<label class="sk-fl">Oštećeno (m²)<input class="sk-in" name="ost" type="number" min="0" step="any" required></label>
+<label class="sk-fl">Zadnji pregled<input class="sk-in" name="pregled" type="date" required></label>
+<button class="sk-btn" type="submit">Sačuvaj</button>
+</form>
+<p class="sk-note">Ako upišeš vrstu koja već postoji, njeni brojevi se zamene novima.</p>
+<p class="sk-err sk-s-req" hidden>Upiši vrstu skele i datum pregleda.</p>
+<p class="sk-err sk-s-bro" hidden>Ukupno mora biti veće od 0, a skela na gradilištu i oštećena ne mogu biti veće od ukupno.</p>
+<p class="sk-err sk-s-save" hidden>Nije sačuvano. Pokušaj ponovo.</p>
+</div>
+<div class="sk-p">
+<h2 class="sk-hd">Tehničko stanje</h2>
+<div class="sk-wrap">
+<table class="sk-tab">
+<thead><tr><th>Vrsta</th><th>Ukupno m²</th><th>Na gradilištu</th><th>Slobodno</th><th>Oštećeno m²</th><th>Dana od pregleda</th><th>Stanje</th><th></th></tr></thead>
+<tbody data-draw="stanje_tab"></tbody>
+</table>
+</div>
+</div>
+<p class="sk-note">Upiši pravo stanje svoje skele u obrazac iznad.</p>
+</div>
+</div>
+</div>
+<script>
+/* ---- Mali sloj za čuvanje podataka u pretraživaču (localStorage) i ponovno crtanje ---- */
+const LS='skela_dashboard_v1';
+const todayIso=()=>{const t=new Date();return new Date(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate())).toISOString().slice(0,10)};
+function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&Array.isArray(s.stavke)&&Array.isArray(s.stanje))return s}catch(e){}
+ return {stavke:[],stanje:[['fasadna','Fasadna'],['ramovska','Ramovska'],['pokretna-kula','Pokretna kula'],['ostalo','Ostalo (podupirači)']].map((a)=>({id:a[0],vrsta:a[1],ukupno_m2:0,na_gradilistu_m2:0,ostecenih_m2:0,zadnji_pregled:todayIso()}))}}
+let state=load();
+const save=()=>{try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}};
+const dash=(()=>{const calcs={},draws=[],onD=[];let cache={};
+ const raw={skela:()=>state.stavke,stanje:()=>state.stanje};
+ const get=(id)=>{if(id in cache)return cache[id];let v;if(raw[id])v=raw[id]().map((r)=>Object.assign({},r));else{const c=calcs[id];v=c.fn.apply(null,c.inputs.map(get))}cache[id]=v;return v};
+ const run=(name,fn)=>document.querySelectorAll('[data-draw="'+name+'"]').forEach((el)=>{try{fn(el)}catch(e){console.error(name,e)}});
+ return {colors:['#ff7a1a','#d4af37','#b85a10','#bfae92'],
+  calc:(id,o)=>{calcs[id]=o},
+  data:(id)=>({status:'ok',data:get(id)}),
+  onData:(fn)=>{onD.push(fn)},
+  draw:(name,fn)=>{if(fn){draws.push([name,fn])}else{draws.filter((d)=>d[0]===name).forEach((d)=>run(d[0],d[1]))}},
+  renderAll:()=>{cache={};onD.forEach((f)=>f());draws.forEach((d)=>run(d[0],d[1]))}}})();
+const claude={use:async(n)=>{
+ if(n==='user')return {id:async()=>'me'};
+ const key=(p)=>/\/skela\/stanje/.test(p)?'stanje':'stavke';
+ const newId=()=>'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+ return {collection:(p)=>({add:async(row)=>{state[key(p)].push(Object.assign({id:newId()},row));save();dash.renderAll()}}),
+  doc:(p)=>{const k=key(p),id=p.split('/').pop();return {
+   set:async(row)=>{const a=state[k],i=a.findIndex((r)=>r.id===id);const nr=Object.assign({id:id},row);if(i>=0)a[i]=nr;else a.push(nr);save();dash.renderAll()},
+   delete:async()=>{state[k]=state[k].filter((r)=>r.id!==id);save();dash.renderAll()}}}}}};
+/* ---- Obračuni ---- */
+const P=d3.utcParse('%Y-%m-%d'),fD=d3.utcFormat('%d.%m.%Y.'),fT=d3.utcFormat('%d.%m.');
+const C={c1:'#ff7a1a',c2:'#d4af37',c3:'#b85a10',c4:'#bfae92',dim:'#6b5a44',gold:'#f5efe6'};
+dash.calc('skela_obracun',{inputs:['skela'],fn:(stavke)=>{
+ const P=d3.utcParse('%Y-%m-%d'),DAY=864e5,jed={dan:1,nedelja:7,mesec:30};
+ const t=new Date(),today=Date.UTC(t.getFullYear(),t.getMonth(),t.getDate());
+ return stavke.map((r)=>{
+  const s=P(r.pocetak),e=P(r.kraj),m2=Number(r.m2),cena=Number(r.cena),pr=Math.round(Number(r.prevoz)||0);
+  if(!s||!e||e<s||!(m2>0)||!(cena>=0))return null;
+  const dana=Math.round((e-s)/DAY)+1,dnevno=m2*cena/(jed[r.jedinica]||1),najam=Math.round(dnevno*dana);
+  return {id:r.id,lokacija:String(r.lokacija||''),vrsta:String(r.vrsta||''),m2:m2,cena:cena,jedinica:r.jedinica||'dan',pocetak:r.pocetak,kraj:r.kraj,napomena:String(r.napomena||''),dana:dana,status:today<+s?'Planirano':(today<=+e?'Aktivno':'Završeno'),dnevno:Math.round(dnevno),najam:najam,prevoz:pr,trosak:najam+pr,do_isteka:Math.round((+e-today)/DAY),do_pocetka:Math.round((+s-today)/DAY)};
+ }).filter(Boolean).sort((a,b)=>a.pocetak<b.pocetak?-1:a.pocetak>b.pocetak?1:0);
+}});
+dash.calc('skela_kpi',{inputs:['skela_obracun'],fn:(rows)=>{
+ const akt=rows.filter((r)=>r.status==='Aktivno'),dani=akt.map((r)=>r.do_isteka);
+ return [{stavki:rows.length,aktivno:akt.length,planirano:rows.filter((r)=>r.status==='Planirano').length,zavrseno:rows.filter((r)=>r.status==='Završeno').length,m2_ukupno:Math.round(d3.sum(rows,(r)=>r.m2)),m2_aktivno:Math.round(d3.sum(akt,(r)=>r.m2)),dnevno_aktivno:d3.sum(akt,(r)=>r.dnevno),trosak_ukupno:d3.sum(rows,(r)=>r.trosak),najam_ukupno:d3.sum(rows,(r)=>r.najam),prevoz_ukupno:d3.sum(rows,(r)=>r.prevoz),istek_dana:dani.length?d3.min(dani):null}];
+}});
+dash.calc('skela_lok',{inputs:['skela_obracun'],fn:(rows)=>Array.from(d3.group(rows,(r)=>r.lokacija),([lok,rs])=>{const m2=Math.round(d3.sum(rs,(r)=>r.m2)*10)/10,tr=d3.sum(rs,(r)=>r.trosak);return {lokacija:lok,m2:m2,najam:d3.sum(rs,(r)=>r.najam),prevoz:d3.sum(rs,(r)=>r.prevoz),trosak:tr,dana:d3.sum(rs,(r)=>r.dana),po_m2:m2>0?Math.round(tr/m2*10)/10:0}}).sort((a,b)=>b.trosak-a.trosak)});
+dash.calc('skela_vrsta',{inputs:['skela_obracun'],fn:(rows)=>{const tot=d3.sum(rows,(r)=>r.trosak);return Array.from(d3.group(rows,(r)=>r.vrsta),([v,rs])=>{const tr=d3.sum(rs,(r)=>r.trosak);return {vrsta:v||'Ostalo',trosak:tr,udeo:tot>0?Math.round(tr/tot*100):0}}).sort((a,b)=>b.trosak-a.trosak)}});
+dash.calc('stanje_vrste',{inputs:['stanje'],fn:(rows)=>{
+ const P=d3.utcParse('%Y-%m-%d'),DAY=864e5,t=new Date(),today=Date.UTC(t.getFullYear(),t.getMonth(),t.getDate());
+ return rows.map((r)=>{const uk=Number(r.ukupno_m2),na=Number(r.na_gradilistu_m2),ost=Number(r.ostecenih_m2),pr=P(r.zadnji_pregled);
+  return {id:r.id,vrsta:r.vrsta,ukupno:uk,na_gradilistu:na,slobodno:uk-na,ostecenih:ost,zauzetost:uk>0?Math.round(na/uk*100):0,dana_od_pregleda:pr?Math.round((today-pr)/DAY):null,stanje:ost>0?'Za popravku':'Ispravno',zadnji_pregled:r.zadnji_pregled}});
+}});
+dash.calc('stanje_zbir',{inputs:['stanje_vrste'],fn:(rows)=>{const uk=d3.sum(rows,(r)=>r.ukupno),na=d3.sum(rows,(r)=>r.na_gradilistu);
+ return [{ukupno:uk,na_gradilistu:na,slobodno:d3.sum(rows,(r)=>r.slobodno),ostecenih:d3.sum(rows,(r)=>r.ostecenih),zauzetost:uk>0?Math.round(na/uk*100):0}]}});
+/* ---- Obrasci ---- */
+const msg=(c,show)=>document.querySelectorAll('.'+c).forEach((p)=>{p.hidden=!show});
+async function ukloni(id){let ok=true;try{const db=await claude.use('db');await db.doc('data/users/me/skela/stavke/'+id).delete()}catch(err){ok=false}msg('sk-e-save',!ok)}
+const form=document.getElementById('sk-form');
+const iso=(d)=>d.toISOString().slice(0,10);
+function defaults(){if(!form)return;const t=new Date(),u=Date.UTC(t.getFullYear(),t.getMonth(),t.getDate());form.elements.pocetak.value=iso(new Date(u));form.elements.kraj.value=iso(new Date(u+30*864e5));form.elements.prevoz.value='0'}
+defaults();
+if(form)form.addEventListener('submit',async(ev)=>{ev.preventDefault();['sk-e-req','sk-e-dat','sk-e-save'].forEach((c)=>msg(c,false));
+ const f=new FormData(form);
+ const row={lokacija:String(f.get('lokacija')||'').trim(),vrsta:String(f.get('vrsta')||''),m2:Number(f.get('m2')),cena:Number(f.get('cena')),jedinica:String(f.get('jedinica')||'dan'),prevoz:Number(f.get('prevoz'))||0,pocetak:String(f.get('pocetak')||''),kraj:String(f.get('kraj')||''),napomena:String(f.get('napomena')||'').trim()};
+ if(!row.lokacija||!(row.m2>0)||!(row.cena>=0)){msg('sk-e-req',true);return}
+ if(!row.pocetak||!row.kraj||row.kraj<row.pocetak){msg('sk-e-dat',true);return}
+ try{const db=await claude.use('db');await db.collection('data/users/me/skela/stavke').add(row);form.reset();defaults()}catch(err){msg('sk-e-save',true)}
+});
+dash.onData(()=>{const k=dash.data('skela_kpi');const n=k.data[0].stavki;
+ document.querySelectorAll('.sk-when-full').forEach((x)=>{x.hidden=(n===0)});
+ document.querySelectorAll('.sk-when-empty').forEach((x)=>{x.hidden=(n!==0)});
+ if(n===0)document.querySelectorAll('.sk-add').forEach((d)=>{d.open=true});
+});
+const note=(el,t)=>{const p=document.createElement('p');p.className='sk-note';p.textContent=t;el.replaceChildren(p)};
+const mk=(el,W,H,label)=>{const svg=d3.create('svg').attr('width','100%').attr('viewBox','0 0 '+W+' '+H).attr('role','img').attr('aria-label',label).style('display','block');el.replaceChildren(svg.node());return svg};
+const mkTip=(el)=>{const tip=document.createElement('div');tip.className='sk-tip';tip.hidden=true;el.append(tip);return {show:(ev,lines)=>{tip.replaceChildren(...lines.map((t)=>{const d=document.createElement('div');d.textContent=t;return d}));tip.hidden=false;const pt=d3.pointer(ev,el);tip.style.left=Math.max(4,Math.min(pt[0]+12,el.clientWidth-tip.offsetWidth-4))+'px';tip.style.top=(pt[1]+14)+'px'},hide:()=>{tip.hidden=true}}};
+dash.draw('danas',(el)=>{el.textContent=d3.timeFormat('%d.%m.%Y.')(new Date())});
+['stavki','aktivno','planirano','zavrseno','m2_ukupno','m2_aktivno','dnevno_aktivno','trosak_ukupno','najam_ukupno','prevoz_ukupno','istek_dana'].forEach((f)=>dash.draw('k_'+f,(el)=>{const v=dash.data('skela_kpi').data[0][f];el.textContent=v==null?'—':String(v)}));
+function hl(name,field){dash.draw(name,(el)=>{const g=dash.data('skela_lok');
+ if(!g.data.length){el.replaceChildren('—');return}
+ const rows=[...g.data].sort((a,b)=>b[field]-a[field]),shown=rows.slice(0,6),mx=d3.max(shown,(r)=>r[field])||1;
+ const out=shown.map((r)=>{const w=document.createElement('div');w.className='sk-hr';const l=document.createElement('div');l.className='sk-hl-l';l.textContent=r.lokacija;const row=document.createElement('div');row.className='sk-hl-r';const v=document.createElement('span');v.className='sk-hl-v';v.textContent=String(r[field]);const tr=document.createElement('div');tr.className='sk-hl-t';const b=document.createElement('div');b.className='sk-hl-b';b.style.width=Math.max(2,r[field]/mx*100)+'%';tr.append(b);row.append(v,tr);w.append(l,row);return w});
+ if(rows.length>6){const p=document.createElement('p');p.className='sk-note';p.textContent='Prikazano 6 od '+rows.length+' gradilišta.';out.push(p)}
+ el.replaceChildren(...out);
+})}
+hl('hl_m2','m2');hl('hl_po_m2','po_m2');hl('hl_dana','dana');
+dash.draw('vbar',(el)=>{const k=dash.data('skela_kpi').data[0];
+ const W=Math.max(150,el.clientWidth),H=190,top=24,bot=26,svg=mk(el,W,H,'Najam i prevoz u evrima');
+ const items=[['NAJAM',k.najam_ukupno,C.c1],['PREVOZ',k.prevoz_ukupno,C.c2]];
+ const x=d3.scaleBand().domain(items.map((d)=>d[0])).range([6,W-6]).padding(0.35),mx=d3.max(items,(d)=>d[1])||1,y=d3.scaleLinear().domain([0,mx]).range([H-bot,top]);
+ svg.append('line').attr('x1',0).attr('x2',W).attr('y1',H-bot).attr('y2',H-bot).style('stroke','#d4af37');
+ items.forEach((d)=>{svg.append('rect').attr('x',x(d[0])).attr('y',y(d[1])).attr('width',x.bandwidth()).attr('height',Math.max(0,y(0)-y(d[1]))).style('fill',d[2]);
+  svg.append('text').attr('class','sk-vl').attr('x',x(d[0])+x.bandwidth()/2).attr('y',y(d[1])-6).attr('text-anchor','middle').text(d[1]+' €');
+  svg.append('text').attr('class','sk-cl').attr('x',x(d[0])+x.bandwidth()/2).attr('y',H-9).attr('text-anchor','middle').text(d[0])});
+});
+dash.draw('gbar',(el)=>{const g=dash.data('skela_lok');
+ if(!g.data.length){el.replaceChildren('—');return}
+ const rows=g.data.slice(0,6),W=Math.max(260,el.clientWidth),H=230,top=26,bot=30,pad=6,svg=mk(el,W,H,'Najam i prevoz po gradilištu u evrima');
+ const x0=d3.scaleBand().domain(rows.map((r,i)=>i)).range([pad,W-pad]).paddingInner(0.25).paddingOuter(0.1),x1=d3.scaleBand().domain([0,1]).range([0,x0.bandwidth()]).padding(0.08);
+ const mx=d3.max(rows,(r)=>Math.max(r.najam,r.prevoz))||1,y=d3.scaleLinear().domain([0,mx]).range([H-bot,top]);
+ svg.append('line').attr('x1',0).attr('x2',W).attr('y1',H-bot).attr('y2',H-bot).style('stroke','#d4af37');
+ const meas=svg.append('text').attr('class','sk-cl');
+ const len=(t)=>{meas.text(t);return meas.node().getComputedTextLength()};
+ const fit=(t,cap)=>{if(len(t)<=cap)return t;let s=t;while(s.length>1&&len(s+'…')>cap)s=s.slice(0,-1);return s+'…'};
+ const tp=mkTip(el);
+ rows.forEach((r,i)=>{[['najam',C.c1],['prevoz',C.c2]].forEach((fc,j)=>{const v=r[fc[0]],bx=x0(i)+x1(j);
+  svg.append('rect').attr('x',bx).attr('y',y(v)).attr('width',x1.bandwidth()).attr('height',Math.max(0,y(0)-y(v))).style('fill',fc[1]);
+  if(x1.bandwidth()>=28)svg.append('text').attr('class','sk-vl').attr('x',bx+x1.bandwidth()/2).attr('y',y(v)-5).attr('text-anchor','middle').style('font-size','10px').text(v)});
+  svg.append('text').attr('class','sk-cl').attr('x',x0(i)+x0.bandwidth()/2).attr('y',H-10).attr('text-anchor','middle').text(fit(r.lokacija,x0.bandwidth()+x0.step()*0.2))});
+ meas.remove();
+ rows.forEach((r,i)=>{const L=[r.lokacija,'Najam: '+r.najam+' €','Prevoz: '+r.prevoz+' €','Ukupno: '+r.trosak+' €'];svg.append('rect').attr('x',x0(i)).attr('y',0).attr('width',x0.bandwidth()).attr('height',H).style('fill','transparent').on('pointermove',(ev)=>tp.show(ev,L)).on('pointerdown',(ev)=>tp.show(ev,L)).on('pointerleave',()=>tp.hide())});
+});
+dash.draw('donut',(el)=>{const g=dash.data('skela_vrsta');
+ if(!g.data.length){el.replaceChildren('—');return}
+ const rows=g.data,S=Math.min(Math.max(160,el.clientWidth),210),pal=[C.c2,C.c1,C.c3,C.c4];
+ const svg=mk(el,S,S,'Udeo troška po vrsti skele').style('max-width',S+'px').style('margin','0 auto');
+ const arcs=d3.pie().sort(null).value((d)=>d.trosak)(rows),arc=d3.arc().innerRadius(S*0.27).outerRadius(S*0.48);
+ const gg=svg.append('g').attr('transform','translate('+S/2+','+S/2+')');
+ gg.selectAll('path').data(arcs).join('path').attr('d',arc).style('fill',(d,i)=>pal[i%pal.length]).style('stroke','#161616').style('stroke-width','2px');
+ const ul=document.createElement('ul');ul.className='sk-ul';
+ rows.forEach((r,i)=>{const li=document.createElement('li');const sw=document.createElement('i');sw.className='sk-sw';sw.style.background=pal[i%pal.length];li.append(sw,document.createTextNode(r.vrsta+' — '+r.trosak+' € ('+r.udeo+'%)'));ul.append(li)});
+ el.append(ul);
+});
+const colorOf=(st)=>st==='Aktivno'?C.c2:(st==='Planirano'?C.c1:C.dim);
+dash.draw('raspored',(el)=>{
+ const g=dash.data('skela_obracun');
+ if(!g.data.length){el.replaceChildren('—');return}
+ const rows=g.data,n=rows.length,W=Math.max(280,el.clientWidth),rowH=30,top=18,bot=26,H=top+n*rowH+bot;
+ const svg=mk(el,W,H,'Raspored najma skele po gradilištima, '+n+' stavki');
+ const m1=svg.append('text').attr('class','sk-rl'),m2=svg.append('text').attr('class','sk-bl');
+ const len=(m,t)=>{m.text(t);return m.node().getComputedTextLength()};
+ const cap=Math.max(70,W*0.3);
+ const fit=(t)=>{let s=t;if(len(m1,s)<=cap)return s;while(s.length>1&&len(m1,s+'…')>cap)s=s.slice(0,-1);return s+'…'};
+ const names=rows.map((r)=>fit(r.lokacija));
+ const ml=Math.ceil(d3.max(names,(t)=>len(m1,t)))+12;
+ const lab=rows.map((r)=>r.dana+' d · '+r.status.toLowerCase());
+ const lw=Math.ceil(d3.max(lab,(t)=>len(m2,t)))+8;
+ m1.remove();m2.remove();
+ const DAY=864e5,t0=new Date(),today=Date.UTC(t0.getFullYear(),t0.getMonth(),t0.getDate());
+ const s=rows.map((r)=>+P(r.pocetak)),e=rows.map((r)=>+P(r.kraj)+DAY);
+ let lo=Math.min(today,...s),hi=Math.max(today+DAY,...e);if(hi-lo<7*DAY)hi=lo+7*DAY;
+ const x=d3.scaleUtc().domain([lo,hi]).range([ml,W-12]);
+ rows.forEach((r,i)=>{
+  const y=top+i*rowH;
+  svg.append('line').attr('x1',0).attr('x2',W).attr('y1',y+rowH).attr('y2',y+rowH).style('stroke','#3a3a3a');
+  svg.append('text').attr('class','sk-rl').attr('x',0).attr('y',y+rowH/2).attr('dy','0.35em').text(names[i]);
+  const x1=x(s[i]),x2=Math.max(x1+4,x(e[i]));
+  svg.append('rect').attr('x',x1).attr('y',y+6).attr('width',x2-x1).attr('height',rowH-12).style('fill',colorOf(r.status));
+  let tx,anc,cls='sk-bl';
+  if(x2+6+lw<=W-4){tx=x2+6;anc='start'}else if(x1-6-lw>=ml){tx=x1-6;anc='end'}else{tx=x2-4;anc='end';cls='sk-bl sk-in-bar'}
+  svg.append('text').attr('class',cls).attr('x',tx).attr('y',y+rowH/2).attr('dy','0.35em').attr('text-anchor',anc).text(lab[i]);
+ });
+ const xt=x(today+DAY/2);
+ svg.append('line').attr('x1',xt).attr('x2',xt).attr('y1',top-4).attr('y2',top+n*rowH).style('stroke',C.gold).style('stroke-dasharray','4 3');
+ svg.append('text').attr('class','sk-bl').attr('x',xt).attr('y',10).attr('text-anchor',xt>W-40?'end':(xt<ml+20?'start':'middle')).style('fill',C.gold).text('danas');
+ svg.append('g').attr('class','sk-axis').attr('transform','translate(0,'+(top+n*rowH)+')').call(d3.axisBottom(x).ticks(Math.max(2,Math.floor((W-ml)/90))).tickFormat(fT).tickSizeOuter(0));
+ const tp=mkTip(el);
+ const lines=(r)=>{const l=[r.lokacija+' · '+r.vrsta,r.m2+' m² · '+r.cena+' € po m² / '+r.jedinica,fD(P(r.pocetak))+' – '+fD(P(r.kraj))+' ('+r.dana+' d)','Trošak: '+r.trosak+' €'+(r.prevoz?' (prevoz '+r.prevoz+' €)':'')];if(r.napomena)l.push(r.napomena);return l};
+ rows.forEach((r,i)=>{svg.append('rect').attr('x',0).attr('y',top+i*rowH).attr('width',W).attr('height',rowH).style('fill','transparent').on('pointermove',(ev)=>tp.show(ev,lines(r))).on('pointerdown',(ev)=>tp.show(ev,lines(r))).on('pointerleave',()=>tp.hide())});
+});
+dash.draw('tabela',(tb)=>{
+ const g=dash.data('skela_obracun');
+ tb.replaceChildren(...g.data.map((r)=>{
+  const tr=document.createElement('tr');tr.dataset.key=r.id;if(r.id===izabran)tr.className='sk-sel-row';
+  tr.addEventListener('click',(ev)=>{if(ev.target.closest('button'))return;izaberi(r.id);const s=document.getElementById('detalj-sek');if(s&&s.scrollIntoView)s.scrollIntoView({behavior:'smooth',block:'start'})});
+  [r.lokacija,r.vrsta,String(r.m2),String(r.cena),r.jedinica,fD(P(r.pocetak)),fD(P(r.kraj)),String(r.dana),r.status,String(r.trosak)].forEach((c,i)=>{const td=document.createElement('td');td.textContent=c;if(i===8)td.className=r.status==='Aktivno'?'st-akt':(r.status==='Završeno'?'st-zav':'');tr.append(td)});
+  const td=document.createElement('td'),b=document.createElement('button');b.type='button';b.className='sk-del';b.textContent='Obriši';let armed=false,tm;
+  b.addEventListener('click',()=>{if(!armed){armed=true;b.textContent='Sigurno?';b.classList.add('armed');tm=setTimeout(()=>{armed=false;b.textContent='Obriši';b.classList.remove('armed')},4000);return}clearTimeout(tm);ukloni(r.id)});
+  td.append(b);tr.append(td);return tr;
+ }));
+});
+/* ---- Pojedinačni najam ---- */
+let izabran=null;
+const pick=(rows)=>{let r=rows.find((x)=>x.id===izabran);if(!r){r=rows.find((x)=>x.status==='Aktivno')||rows[0];izabran=r.id}return r};
+function izaberi(id){izabran=id;dash.draw('izbor');dash.draw('detalj');dash.draw('tabela')}
+function krok(d){const rows=dash.data('skela_obracun').data;if(!rows.length)return;const i=rows.findIndex((x)=>x.id===izabran);izaberi(rows[(i+d+rows.length)%rows.length].id)}
+['sk-prev','sk-next'].forEach((id,i)=>{const b=document.getElementById(id);if(b)b.addEventListener('click',()=>krok(i?1:-1))});
+dash.draw('izbor',(sel)=>{const rows=dash.data('skela_obracun').data;
+ if(!rows.length){sel.replaceChildren();return}
+ const r=pick(rows);
+ sel.replaceChildren(...rows.map((x)=>new Option(x.lokacija+' · '+x.vrsta+' · '+fD(P(x.pocetak)),x.id)));
+ sel.value=r.id;sel.onchange=()=>izaberi(sel.value);
+});
+dash.draw('detalj',(el)=>{
+ const g=dash.data('skela_obracun');
+ if(!g.data.length){el.replaceChildren('—');return}
+ const r=pick(g.data);
+ const mkEl=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
+ const head=mkEl('div','sk-dh');
+ head.append(mkEl('span','sk-dt',r.lokacija),mkEl('span','sk-ds',r.vrsta),mkEl('span','sk-st'+(r.status==='Aktivno'?' akt':''),r.status));
+ const cell=(label,valEl,suffix)=>{const c=mkEl('div','sk-dc');c.append(mkEl('span','sk-lab',label));const row=mkEl('div');row.append(valEl);if(suffix)row.append(document.createTextNode(suffix));c.append(row);return c};
+ const num=(field,hot)=>mkEl('b','sk-dv'+(hot?' hot':''),String(r[field]));
+ const grid=mkEl('div','sk-dg');
+ const per=mkEl('div');per.append(mkEl('b','sk-dv sm',fD(P(r.pocetak))),document.createTextNode(' – '),mkEl('b','sk-dv sm',fD(P(r.kraj))));
+ const pc=mkEl('div','sk-dc');pc.append(mkEl('span','sk-lab','Period'),per);
+ grid.append(cell('Površina',num('m2'),' m²'),cell('Cena',num('cena'),' € po m² / '+r.jedinica),pc,cell('Trajanje',num('dana'),' dana'),cell('Dnevni trošak',num('dnevno'),' €'),cell('Najam',num('najam'),' €'),cell('Prevoz i montaža',num('prevoz'),' €'),cell('Ukupno',num('trosak',true),' €'));
+ const frac=r.status==='Planirano'?0:(r.status==='Završeno'?1:Math.min(1,Math.max(0,(r.dana-r.do_isteka)/r.dana)));
+ const pg=mkEl('div','sk-pg');pg.setAttribute('role','img');pg.setAttribute('aria-label','Proteklo vreme najma');const pb=mkEl('div','sk-pb');pb.style.width=(frac*100)+'%';pg.append(pb);
+ const pl=mkEl('p','sk-pl');
+ if(r.status==='Aktivno'){if(r.do_isteka>0){pl.append('Ističe za ',mkEl('b',null,String(r.do_isteka)),' dana.')}else{pl.append('Ističe danas.')}}
+ else if(r.status==='Planirano'){if(r.do_pocetka>0){pl.append('Počinje za ',mkEl('b',null,String(r.do_pocetka)),' dana.')}else{pl.append('Počinje danas.')}}
+ else{pl.append('Najam je završen.')}
+ const out=[head,grid,pg,pl];
+ if(r.napomena)out.push(mkEl('p','sk-nt',r.napomena));
+ el.replaceChildren(...out);
+});
+/* ---- Stanje skele (prozor) ---- */
+const modal=document.getElementById('sk-modal');
+const otvori=()=>{if(!modal)return;modal.hidden=false;if(modal.scrollIntoView)modal.scrollIntoView({block:'start'})};
+const zatvori=()=>{if(modal)modal.hidden=true};
+const bo=document.getElementById('sk-open'),bc=document.getElementById('sk-close');
+if(bo)bo.addEventListener('click',otvori);
+if(bc)bc.addEventListener('click',zatvori);
+if(modal)modal.addEventListener('click',(ev)=>{if(ev.target===modal)zatvori()});
+document.addEventListener('keydown',(ev)=>{if(ev.key==='Escape')zatvori()});
+['ukupno','na_gradilistu','slobodno','ostecenih','zauzetost'].forEach((f)=>dash.draw('z_'+f,(el)=>{const v=dash.data('stanje_zbir').data[0][f];el.textContent=v==null?'—':String(v)}));
+dash.draw('stanje_bar',(el)=>{const g=dash.data('stanje_vrste');
+ if(!g.data.length){note(el,'Još nema upisane skele. Dodaj prvu vrstu ispod.');return}
+ const mx=d3.max(g.data,(r)=>r.ukupno)||1;
+ el.replaceChildren(...g.data.map((r)=>{const w=document.createElement('div');w.className='sk-sr';
+  const l=document.createElement('div');l.className='sk-sl';const a=document.createElement('span');a.textContent=r.vrsta;const b=document.createElement('span');b.textContent=r.na_gradilistu+' od '+r.ukupno+' m² na gradilištu';l.append(a,b);
+  const t=document.createElement('div');t.className='sk-trk';t.style.width=Math.max(4,r.ukupno/mx*100)+'%';
+  const s1=document.createElement('div');s1.className='sk-sa';s1.style.width=(r.ukupno>0?r.na_gradilistu/r.ukupno*100:0)+'%';
+  const s2=document.createElement('div');s2.className='sk-sb';s2.style.width=(r.ukupno>0?r.slobodno/r.ukupno*100:0)+'%';
+  t.append(s1,s2);w.append(l,t);return w}));
+});
+dash.draw('stanje_tab',(tb)=>{const g=dash.data('stanje_vrste');
+ tb.replaceChildren(...g.data.map((r)=>{const tr=document.createElement('tr');tr.dataset.key=r.vrsta;
+  [r.vrsta,String(r.ukupno),String(r.na_gradilistu),String(r.slobodno),String(r.ostecenih),r.dana_od_pregleda==null?'—':String(r.dana_od_pregleda),r.stanje].forEach((c,i)=>{const td=document.createElement('td');td.textContent=c;if(i===6&&r.stanje==='Za popravku')td.className='st-akt';tr.append(td)});
+  const ta=document.createElement('td'),be=document.createElement('button'),bd=document.createElement('button');
+  be.type='button';be.className='sk-del';be.textContent='Izmeni';be.addEventListener('click',()=>izmeniStanje(r));
+  bd.type='button';bd.className='sk-del';bd.textContent='Obriši';let armed=false,tm;
+  bd.addEventListener('click',()=>{if(!armed){armed=true;bd.textContent='Sigurno?';bd.classList.add('armed');tm=setTimeout(()=>{armed=false;bd.textContent='Obriši';bd.classList.remove('armed')},4000);return}clearTimeout(tm);ukloniStanje(r.id)});
+  ta.append(be,document.createTextNode(' '),bd);tr.append(ta);return tr}));
+});
+const sform=document.getElementById('sk-sform');
+function sDefaults(){if(!sform)return;sform.elements.pregled.value=todayIso()}
+sDefaults();
+function izmeniStanje(r){if(!sform)return;sform.elements.vrsta.value=r.vrsta;sform.elements.ukupno.value=r.ukupno;sform.elements.na.value=r.na_gradilistu;sform.elements.ost.value=r.ostecenih;if(r.zadnji_pregled)sform.elements.pregled.value=r.zadnji_pregled;if(sform.scrollIntoView)sform.scrollIntoView({behavior:'smooth',block:'center'});sform.elements.vrsta.focus()}
+async function ukloniStanje(id){let ok=true;try{const db=await claude.use('db');await db.doc('data/users/me/skela/stanje/'+id).delete()}catch(err){ok=false}msg('sk-s-save',!ok)}
+if(sform)sform.addEventListener('submit',async(ev)=>{ev.preventDefault();['sk-s-req','sk-s-bro','sk-s-save'].forEach((c)=>msg(c,false));
+ const f=new FormData(sform);
+ const row={vrsta:String(f.get('vrsta')||'').trim(),ukupno_m2:Number(f.get('ukupno')),na_gradilistu_m2:Number(f.get('na')),ostecenih_m2:Number(f.get('ost')),zadnji_pregled:String(f.get('pregled')||'')};
+ if(!row.vrsta||!row.zadnji_pregled){msg('sk-s-req',true);return}
+ if(!(row.ukupno_m2>0)||row.na_gradilistu_m2<0||row.ostecenih_m2<0||row.na_gradilistu_m2>row.ukupno_m2||row.ostecenih_m2>row.ukupno_m2){msg('sk-s-bro',true);return}
+ const ex=dash.data('stanje_vrste').data.find((r)=>String(r.vrsta).toLowerCase()===row.vrsta.toLowerCase());
+ try{const db=await claude.use('db');const base='data/users/me/skela/stanje';
+  if(ex&&ex.id)await db.doc(base+'/'+ex.id).set(row);else await db.collection(base).add(row);
+  sform.reset();sDefaults()}catch(err){msg('sk-s-save',true)}
+});
+/* ---- Rezervna kopija ---- */
+const bx=document.getElementById('sk-exp'),bi=document.getElementById('sk-imp');
+if(bx)bx.addEventListener('click',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='skela-podaci.json';document.body.append(a);a.click();a.remove()});
+if(bi)bi.addEventListener('change',()=>{const f=bi.files&&bi.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const s=JSON.parse(rd.result);if(s&&Array.isArray(s.stavke)&&Array.isArray(s.stanje)){state={stavke:s.stavke,stanje:s.stanje};save();dash.renderAll()}}catch(e){}bi.value=''};rd.readAsText(f)});
+/* ---- Start ---- */
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(dash.renderAll,150)});
+dash.renderAll();
+</script>
+</body>
+</html>
